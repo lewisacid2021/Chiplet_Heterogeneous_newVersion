@@ -19,3 +19,6 @@
 [submodule "gem5"]
 	path = gem5
 	url = https://github.com/gem5/gem5.git
+[submodule "dramsim3"]
+	path = dramsim3
+	url = git@github.com:umd-memsys/DRAMsim3.git
