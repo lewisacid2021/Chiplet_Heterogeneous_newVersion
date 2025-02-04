@@ -6797,3 +6797,46 @@ __host__ cudaError_t CUDARTAPI receiveMessage(int __dst_x, int __dst_y, int __sr
 
     return cudaSuccess;
 }
+
+__host__ cudaError_t CUDARTAPI readMemory(int __dst_x, int __dst_y,int __src_x, int __src_y, MemStruct* __mem_struct)
+{
+    int __addr = __mem_struct->addr;
+    char * data = (char *)__mem_struct->data;
+    int nbytes = __mem_struct->nbytes;
+
+    uint8_t *interdata = new uint8_t[nbytes];
+
+    std::cout << "Enter GPGPUSim receiveMemory" << std::endl;
+    std::string fileName = InterChiplet::createPipSync(__src_x,__src_y,__dst_x,__dst_y);
+    
+    InterChiplet::readMemSync(__src_x,__src_y,__dst_x,__dst_y,__addr, nbytes); 
+    InterChiplet::readMemData(fileName, (char*)interdata, nbytes);
+
+    // write data to GPU memory.
+    cudaMemcpy(data, interdata, nbytes, cudaMemcpyHostToDevice);
+    delete interdata;
+
+    return cudaSuccess;
+}
+
+__host__ cudaError_t CUDARTAPI writeMemory(int __dst_x, int __dst_y,int __src_x, int __src_y, MemStruct* __mem_struct)
+{
+    int __addr = __mem_struct->addr;
+    char * data = (char *)__mem_struct->data;
+    int nbytes = __mem_struct->nbytes;
+
+    uint8_t *interdata = new uint8_t[nbytes];
+    cudaMemcpy(interdata, data, nbytes, cudaMemcpyDeviceToHost);
+
+    std::cout << "Enter GPGPUSim writeMemory" << std::endl;
+    
+    std::string fileName = InterChiplet::createPipSync(__src_x,__src_y,__dst_x,__dst_y);
+    
+    
+    InterChiplet::writeMemData(fileName, (char*)interdata, nbytes);
+    InterChiplet::writeMemSync(__src_x,__src_y,__dst_x,__dst_y,__addr, nbytes); 
+
+    delete interdata;
+
+    return cudaSuccess;
+}

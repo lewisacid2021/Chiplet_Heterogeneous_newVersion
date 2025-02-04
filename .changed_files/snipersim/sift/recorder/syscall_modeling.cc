@@ -186,6 +186,9 @@ VOID emulateSyscallFunc(THREADID threadid, CONTEXT *ctxt)
          case InterChiplet::SYSCALL_WAITLAUNCH:
          case InterChiplet::SYSCALL_REMOTE_READ:
          case InterChiplet::SYSCALL_REMOTE_WRITE:
+         case InterChiplet::SYSCALL_READ_MEMORY:
+         case InterChiplet::SYSCALL_WRITE_MEMORY:
+         case InterChiplet::SYSCALL_STOP_MEMORY:
          {
             thread_data[threadid].last_syscall_number = syscall_number;
             thread_data[threadid].last_syscall_emulated=true;
@@ -275,6 +278,53 @@ VOID emulateSyscallFunc(THREADID threadid, CONTEXT *ctxt)
                   std::string fileName = InterChiplet::receiveSync(srcX, srcY, dstX, dstY);
                   global_pipe_comm.read_data(fileName.c_str(), data, nbytes);
                   break;
+               }
+               case InterChiplet::SYSCALL_STOP_MEMORY:
+               {
+                  int dstX = args[0];
+                  int dstY = args[1];
+                  printf("Enter Sniper stopMemory\n");
+                  InterChiplet::stopMemSync(dstX,dstY);
+                  break;
+               }
+               case InterChiplet::SYSCALL_READ_MEMORY:
+               {
+                  int dstX = args[0];
+                  int dstY = args[1];
+                  int srcX = args[2];
+                  int srcY = args[3];
+                  InterChiplet::MemStruct* mem_struct = (InterChiplet::MemStruct*)args[4];
+                  int __addr = mem_struct->addr;
+                  char * data = (char *)mem_struct->data;
+                  int nbytes = mem_struct->nbytes;
+
+                  printf("Enter Sniper acessMemory\n");
+                  std::string fileName = InterChiplet::createPipSync(srcX,srcY,dstX,dstY);
+                  
+                  InterChiplet::readMemSync(srcX,srcY,dstX,dstY,__addr, nbytes); 
+                  InterChiplet::readMemData(fileName, data, nbytes);
+                  
+                  break;              
+               }
+               case InterChiplet::SYSCALL_WRITE_MEMORY:
+               {
+                  int dstX = args[0];
+                  int dstY = args[1];
+                  int srcX = args[2];
+                  int srcY = args[3];
+                  InterChiplet::MemStruct* mem_struct = (InterChiplet::MemStruct*)args[4];
+                  int __addr = mem_struct->addr;
+                  char * data = (char *)mem_struct->data;
+                  int nbytes = mem_struct->nbytes;
+
+
+                  printf("Enter Sniper acessMemory %d\n",nbytes);
+                  std::string fileName = InterChiplet::createPipSync(srcX,srcY,dstX,dstY);
+             
+                  InterChiplet::writeMemData(fileName, data, nbytes);
+                  InterChiplet::writeMemSync(srcX,srcY,dstX,dstY,__addr, nbytes); 
+                  
+                  break;              
                }
             }
 
