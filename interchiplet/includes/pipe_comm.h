@@ -2,6 +2,8 @@
 #pragma once
 
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -12,6 +14,7 @@
 
 #include "global_define.h"
 #include "sync_protocol.h"
+#include <unistd.h>
 
 // #define PIPE_COMMON_DEBUG
 #define PIPE_COMMON_UNIT_CAPACITY 4096
@@ -26,6 +29,31 @@ namespace InterChiplet {
 /**
  * @brief Structure for Single Pipe communication.
  */
+
+inline void readMemData(const std::string& filename, char* buffer, size_t nbytes)
+{
+    std::ifstream file(filename.c_str(), std::ios::binary);
+    if (!file) {
+        std::cerr<<"Cannot open memPipe file: "<<filename<<std::endl;
+    }
+
+    // 读取指定字节数
+    file.read(buffer, nbytes);
+    file.close();
+}
+
+inline void writeMemData(const std::string& filename, char* data, size_t nbytes)
+{
+    std::ofstream file(filename.c_str(), std::ios::binary | std::ios::app); // 以二进制追加方式打开文件
+    if (!file) {
+        std::cerr<<"Cannot open memPipe file: "<<filename<<std::endl;
+    }
+
+    // 写入指定字节数
+    file.write(data, nbytes);
+    file.close();
+}
+
 class PipeCommUnit {
    public:
     PipeCommUnit(const char *file_name, bool read) {

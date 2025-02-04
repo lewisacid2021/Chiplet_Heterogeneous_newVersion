@@ -1,6 +1,6 @@
 
 #include "apis_c.h"
-
+#include <iostream>
 #include "global_define.h"
 
 namespace InterChiplet {
@@ -41,6 +41,27 @@ syscall_return_t receiveMessage(int64_t __dst_x, int64_t __dst_y, int64_t __src_
                                 void* __addr, int64_t __nbyte) {
     int ret_code =
         syscall(SYSCALL_REMOTE_READ, __dst_x, __dst_y, __src_x, __src_y, __addr, __nbyte);
+    return ret_code;
+}
+
+syscall_return_t readMemory(int64_t __dst_x, int64_t __dst_y,int64_t __src_x, int64_t __src_y, MemStruct* __mem_struct)
+{
+    int ret_code =
+        syscall(SYSCALL_READ_MEMORY, __dst_x,__dst_y,__src_x, __src_y,__mem_struct);
+    return ret_code;
+}
+
+syscall_return_t writeMemory(int64_t __dst_x, int64_t __dst_y,int64_t __src_x, int64_t __src_y, MemStruct* __mem_struct)
+{
+    int ret_code =
+        syscall(SYSCALL_WRITE_MEMORY, __dst_x,__dst_y,__src_x, __src_y,__mem_struct);
+    return ret_code;
+}
+
+syscall_return_t stopMemory(int64_t __dst_x, int64_t __dst_y)
+{
+    int ret_code =
+        syscall(SYSCALL_STOP_MEMORY, __dst_x, __dst_y);
     return ret_code;
 }
 }  // namespace InterChiplet

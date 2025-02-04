@@ -378,7 +378,59 @@ class SyncCommStruct {
      */
     std::map<InterChiplet::AddrType, SyncCmdList> m_write_cmd_list;
 
+    /**
+     * @brief List of Mem commands, used to pair with response commands.
+     */
+
+    std::map<InterChiplet::AddrType, SyncCmdList> m_mem_cmd_list;
+
    public:
+    inline bool hasMatchMem(const InterChiplet::SyncCommand& __cmd) {
+        if (m_mem_cmd_list.find(__cmd.m_src) == m_mem_cmd_list.end()) {
+            return false;
+        }
+
+        SyncCmdList& cmd_list = m_mem_cmd_list[__cmd.m_src];
+
+        for (std::size_t i = 0; i < cmd_list.size(); i++) {
+            InterChiplet::SyncCommand& __write_cmd = cmd_list[i];
+            if (__cmd.m_src == __write_cmd.m_src && __cmd.m_dst == __write_cmd.m_dst && 
+                __cmd.m_addr == __write_cmd.m_addr &&__cmd.m_nbytes == __write_cmd.m_nbytes) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline InterChiplet::SyncCommand popMatchMem(const InterChiplet::SyncCommand& __cmd) {
+        SyncCmdList& cmd_list = m_mem_cmd_list[__cmd.m_src];
+
+        for (std::size_t i = 0; i < cmd_list.size(); i++) {
+            InterChiplet::SyncCommand& __write_cmd = cmd_list[i];
+            if (__cmd.m_src == __write_cmd.m_src && __cmd.m_dst == __write_cmd.m_dst &&
+                __cmd.m_addr == __write_cmd.m_addr && __cmd.m_nbytes == __write_cmd.m_nbytes) {
+                InterChiplet::SyncCommand match_cmd = cmd_list[i];
+                cmd_list.erase(cmd_list.begin() + i);
+                return match_cmd;
+            }
+        }
+        return InterChiplet::SyncCommand();
+    }
+
+    inline void insertMem(InterChiplet::SyncCommand& __cmd) {
+        if (m_mem_cmd_list.find(__cmd.m_src) == m_mem_cmd_list.end()) {
+            m_mem_cmd_list[__cmd.m_src] = std::vector<InterChiplet::SyncCommand>();
+        }
+        m_mem_cmd_list[__cmd.m_src].push_back(__cmd);
+    }
+
+    inline void insertMem(const InterChiplet::SyncCommand& __cmd) {
+        if (m_mem_cmd_list.find(__cmd.m_src) == m_mem_cmd_list.end()) {
+            m_mem_cmd_list[__cmd.m_src] = std::vector<InterChiplet::SyncCommand>();
+        }
+        m_mem_cmd_list[__cmd.m_src].push_back(__cmd);
+    }
+
     inline bool hasMatchWrite(const InterChiplet::SyncCommand& __cmd) {
         if (m_write_cmd_list.find(__cmd.m_dst) == m_write_cmd_list.end()) {
             return false;
@@ -545,6 +597,8 @@ class SyncStruct {
      * @brief Lock behavior.
      */
     SyncLockStruct m_lock_timing_struct;
+
+    std::map<InterChiplet::AddrType, int> m_mem_map;
 };
 /**
  * @}
@@ -617,6 +671,42 @@ void handle_read_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_
  * @param __sync_struct Pointer to global synchronize structure.
  */
 void handle_write_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+void handle_startmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+void handle_readmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+void handle_writemem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+void handle_stopmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+void handle_resultmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+void handle_createpip_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct);
+
+inline void readMemData(const std::string& filename, char* buffer, size_t nbytes)
+{
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        spdlog::debug("Cannot open memPipe file: {}",filename);
+    }
+
+    // 读取指定字节数
+    file.read(buffer, nbytes);
+    file.close();
+}
+
+inline void writeMemData(const std::string& filename, char* data, size_t nbytes)
+{
+    std::ofstream file(filename, std::ios::binary | std::ios::app); // 以二进制追加方式打开文件
+    if (!file) {
+        spdlog::debug("Cannot open memPipe file: {}",filename);
+    }
+
+    // 写入指定字节数
+    file.write(data, nbytes);
+    file.close();
+}
 /**
  * @}
  */

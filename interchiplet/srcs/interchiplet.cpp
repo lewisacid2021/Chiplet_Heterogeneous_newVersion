@@ -1,5 +1,9 @@
 
+#include <cstdint>
+#include <cstdio>
 #include <fcntl.h>
+#include <fstream>
+#include <ios>
 #include <poll.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -91,6 +95,7 @@ void parse_command(char* __pipe_buf, ProcessStruct* __proc_struct, int __stdin_f
         std::string l = lines[i];
         if (l.substr(0, 10) == "[INTERCMD]") {
             InterChiplet::SyncCommand cmd = InterChiplet::parseCmd(l);
+
             cmd.m_stdin_fd = __stdin_fd;
             cmd.m_clock_rate = __proc_struct->m_clock_rate;
             cmd.m_cycle = cmd.m_cycle / __proc_struct->m_clock_rate;
@@ -148,10 +153,27 @@ void parse_command(char* __pipe_buf, ProcessStruct* __proc_struct, int __stdin_f
                 case InterChiplet::SC_WRITE:
                     handle_write_cmd(cmd, __proc_struct->m_sync_struct);
                     break;
+                case InterChiplet::SC_READMEM:
+                    handle_readmem_cmd(cmd, __proc_struct->m_sync_struct);
+                    break;  
+                case InterChiplet::SC_WRITEMEM:
+                    handle_writemem_cmd(cmd, __proc_struct->m_sync_struct);
+                    break;
+                case InterChiplet::SC_CREATEPIP:
+                    handle_createpip_cmd(cmd, __proc_struct->m_sync_struct);
+                    break;
+                case InterChiplet::SC_STARTMEM:
+                    handle_startmem_cmd(cmd, __proc_struct->m_sync_struct);
+                    break;
+                case InterChiplet::SC_STOPMEM:
+                    handle_stopmem_cmd(cmd, __proc_struct->m_sync_struct);
+                    break;
+                case InterChiplet::SC_RESULTMEM:
+                    handle_resultmem_cmd(cmd, __proc_struct->m_sync_struct);
+                    break;
                 default:
                     break;
             }
-
             pthread_mutex_unlock(&__proc_struct->m_sync_struct->m_mutex);
         }
     }
@@ -413,6 +435,7 @@ void __loop_phase_two(int __round, const std::vector<ProcessConfig>& __proc_cfg_
 }
 
 int main(int argc, const char* argv[]) {
+
     // Parse command line.
     CmdLineOptions options;
     if (options.parse(argc, argv) != 0) {
@@ -488,8 +511,11 @@ int main(int argc, const char* argv[]) {
     // Get end time of simulation.
     spdlog::info("**** End of Simulation ****");
     gettimeofday(&simend, 0);
-    unsigned long elaped_sec = simend.tv_sec - simstart.tv_sec;
+    unsigned long elaped_msec = (simend.tv_sec - simstart.tv_sec) * 1000 +  // 秒转换为毫秒
+                          (simend.tv_usec - simstart.tv_usec) / 1000; // 微秒转换为毫秒
+    unsigned long elaped_sec = elaped_msec / 1000;
     spdlog::info("Benchmark elapses {} cycle.", static_cast<InterChiplet::TimeType>(sim_cycle));
-    spdlog::info("Simulation elapseds {}d {}h {}m {}s.", elaped_sec / 3600 / 24,
-                 (elaped_sec / 3600) % 24, (elaped_sec / 60) % 60, elaped_sec % 60);
+    spdlog::info("Simulation elapseds {}d {}h {}m {}s {}ms.", elaped_sec / 3600 / 24,
+                 (elaped_sec / 3600) % 24, (elaped_sec / 60) % 60, elaped_sec % 60,elaped_msec%1000);
+
 }

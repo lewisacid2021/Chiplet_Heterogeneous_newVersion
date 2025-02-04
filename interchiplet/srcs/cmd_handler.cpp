@@ -1,6 +1,6 @@
-
 #include "cmd_handler.h"
 
+#include <cstdint>
 #include <sstream>
 #include <string>
 
@@ -470,4 +470,102 @@ void handle_write_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync
             read_cmd.m_stdin_fd,
             static_cast<InterChiplet::TimeType>(DST_DELAY(end_cycle) * read_cmd.m_clock_rate));
     }
+}
+
+void handle_startmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct)
+{
+    // 检查内存是否已经注册
+    if(__sync_struct->m_mem_map.find(__cmd.m_src)!=__sync_struct->m_mem_map.end())
+    {
+        spdlog::error("Memory [{},{}] has been duplicately registered!", __cmd.m_src[0], __cmd.m_src[1]);
+        InterChiplet::sendResultCmd(__cmd.m_stdin_fd,std::vector<long>{0});
+    }
+    else {
+        // 注册DDR内存 关联ID与文件描述符
+        __sync_struct->m_mem_map.emplace(__cmd.m_src, __cmd.m_stdin_fd);
+        //spdlog::info("Memory [{},{}] has been registered.", __cmd.m_src[0], __cmd.m_src[1]);
+        InterChiplet::sendResultCmd(__cmd.m_stdin_fd,std::vector<long>{1});
+    }
+}
+
+void handle_readmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct)
+{
+    // 检查内存是否已经注册
+    if(__sync_struct->m_mem_map.find(__cmd.m_dst)==__sync_struct->m_mem_map.end())
+    {
+        spdlog::error("Memory [{},{}] has not been registered!", __cmd.m_dst[0], __cmd.m_dst[1]);
+        //直接 返回结果
+        InterChiplet::sendResultCmd(__cmd.m_stdin_fd,std::vector<long>{0});
+    }
+    else 
+    {
+        // 发送给DDR内存端 读取数据
+        int mem_stdin_id=__sync_struct->m_mem_map[__cmd.m_dst];
+        // 加入等待队列
+        __sync_struct->m_comm_struct.insertMem(__cmd);
+        InterChiplet::sendReadMemSyncCmd(mem_stdin_id,__cmd.m_src[0],__cmd.m_src[1],__cmd.m_dst[0],__cmd.m_dst[1],__cmd.m_addr,__cmd.m_nbytes);
+    }
+}
+
+void handle_writemem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct)
+{
+    // 检查内存是否已经注册
+    if(__sync_struct->m_mem_map.find(__cmd.m_dst)==__sync_struct->m_mem_map.end())
+    {
+        spdlog::error("Memory [{},{}] has not been registered!", __cmd.m_dst[0], __cmd.m_dst[1]);
+        //直接 返回结果
+        InterChiplet::sendResultCmd(__cmd.m_stdin_fd,std::vector<long>{0});
+    }
+    else 
+    {
+        // 发送给DDR内存端 写入数据
+        int mem_stdin_id=__sync_struct->m_mem_map[__cmd.m_dst];
+        // 加入等待队列
+        __sync_struct->m_comm_struct.insertMem(__cmd);
+        InterChiplet::sendWriteMemSyncCmd(mem_stdin_id,__cmd.m_src[0],__cmd.m_src[1],__cmd.m_dst[0],__cmd.m_dst[1],__cmd.m_addr,__cmd.m_nbytes);
+    }
+}
+
+void handle_stopmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct)
+{
+    // 检查内存是否已经注册
+    if(__sync_struct->m_mem_map.find(__cmd.m_dst)==__sync_struct->m_mem_map.end())
+    {
+        spdlog::error("Memory [{},{}] has not been registered!", __cmd.m_dst[0], __cmd.m_dst[1]);
+        InterChiplet::sendResultCmd(__cmd.m_stdin_fd,std::vector<long>{0});
+    }
+    else 
+    {
+        // 发送给DDR内存端 告知其终止运行
+        int mem_stdin_id=__sync_struct->m_mem_map[__cmd.m_dst];
+        InterChiplet::sendStopMemSyncCmd(mem_stdin_id,__cmd.m_dst[0],__cmd.m_dst[1]);
+        // 删除内存映射
+        __sync_struct->m_mem_map.erase(__cmd.m_dst);
+        //spdlog::info("Memory [{},{}] has been unregistered.", __cmd.m_dst[0], __cmd.m_dst[1]);
+        // 返回结果
+        InterChiplet::sendResultCmd(__cmd.m_stdin_fd,std::vector<long>{1});
+    }
+}
+
+void handle_createpip_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct)
+{
+    std::string file_name= InterChiplet::pipeName(__cmd.m_src, __cmd.m_dst);
+    
+    std::ofstream file(file_name.c_str(), std::ios::binary);
+    if (!file) {
+        std::cerr << "Cannot create pipeFile: " << file_name << std::endl;
+    } else {
+        // 文件创建成功，关闭文件
+        file.close();
+    }
+
+    std::string resp_file_name = "../" + file_name;
+    InterChiplet::sendResultCmd(__cmd.m_stdin_fd, {resp_file_name});
+}
+
+void handle_resultmem_cmd(const InterChiplet::SyncCommand& __cmd, SyncStruct* __sync_struct)
+{
+    bool has_mem_cmd = __sync_struct->m_comm_struct.hasMatchMem(__cmd);
+    InterChiplet::SyncCommand mem_cmd = __sync_struct->m_comm_struct.popMatchMem(__cmd);
+    InterChiplet::sendResultCmd(mem_cmd.m_stdin_fd,std::vector<long>{1});
 }

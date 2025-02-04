@@ -74,6 +74,23 @@ extern __host__ cudaError_t CUDARTAPI sendMessage(int __dst_x, int __dst_y, int 
  */
 extern __host__ cudaError_t CUDARTAPI receiveMessage(int __dst_x, int __dst_y, int __src_x,
                                                      int __srx_y, void* __addr, int __nbyte);
+
+class MemStruct{
+    public:
+        char * data;
+        int addr;
+        int nbytes;
+    MemStruct(char * _data, int _addr, int _nbytes):data(_data),addr(_addr),nbytes(_nbytes){};
+};
+
+
+extern __host__ cudaError_t CUDARTAPI readMemory(int __dst_x, int __dst_y,int __src_x, int __src_y, MemStruct* __mem_struct);
+
+extern __host__ cudaError_t CUDARTAPI writeMemory(int __dst_x, int __dst_y,int __src_x, int __src_y, MemStruct* __mem_struct);
+
+extern __host__ cudaError_t CUDARTAPI stopMemory(int __dst_x, int __dst_y);
+
+
 /**
  * @}
- */
+ */ 

@@ -17,10 +17,14 @@ GPGPUSIM_TARGET=bin/mlp_cu
 REPO_DIR=$(BENCHMARK_ROOT)/json
 GIT_REPO=https://github.com/nlohmann/json.git
 
-all: sniper_target gpgpusim_target
+all: bin_dir sniper_target gpgpusim_target
 
 sniper_target: $(SNIPER_OBJS)
 	$(CC) -g $(SNIPER_OBJS) $(INTERCHIPLETLIB) -o $(SNIPER_TARGET) -lpthread
+
+# Directory for binary files.
+bin_dir:
+	mkdir -p bin
 
 %.o: %.cpp
 	if [ ! -d $(REPO_DIR) ]; then \

@@ -23,6 +23,9 @@ enum SysCallID {
     SYSCALL_UNLOCK = 505,        // Unlock mutex.
     SYSCALL_REMOTE_READ = 506,   // Read cross chiplet
     SYSCALL_REMOTE_WRITE = 507,  // Write cross chiplet
+    SYSCALL_READ_MEMORY = 508,  // READ DDR MEM
+    SYSCALL_WRITE_MEMORY = 509,  // WRITE DDR MEM
+    SYSCALL_STOP_MEMORY = 510  // STOP DDR MEM
 };
 
 /**
@@ -60,6 +63,12 @@ enum SyncCommType {
     SC_WRITE,
     SC_SYNC,
     SC_RESULT,
+    SC_READMEM,
+    SC_WRITEMEM,
+    SC_STARTMEM,
+    SC_STOPMEM,
+    SC_CREATEPIP,
+    SC_RESULTMEM
 };
 
 /**
@@ -122,6 +131,10 @@ class SyncCommand {
      */
     AddrType m_dst;
     /**
+     * @brief Address of memory to read/write.
+     */
+    uint64_t m_addr;
+    /**
      * @brief Number of bytes to write.
      */
     int m_nbytes;
@@ -143,4 +156,5 @@ class SyncCommand {
      */
     int m_stdin_fd;
 };
+
 }  // namespace InterChiplet

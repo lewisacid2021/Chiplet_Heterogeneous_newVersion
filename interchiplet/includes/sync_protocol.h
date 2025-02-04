@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -64,6 +65,12 @@ inline SyncCommand parseCmd(const std::string& __message) {
                  : command == "WRITE"      ? SC_WRITE
                  : command == "SYNC"       ? SC_SYNC
                  : command == "RESULT"     ? SC_RESULT
+                 : command == "READMEM"    ? SC_READMEM
+                 : command == "WRITEMEM"   ? SC_WRITEMEM
+                 : command == "STARTMEM"   ? SC_STARTMEM
+                 : command == "STOPMEM"    ? SC_STOPMEM
+                 : command == "RESULTMEM"  ? SC_RESULTMEM
+                 : command == "CREATEPIP"  ? SC_CREATEPIP
                                            : SC_CYCLE;
 
     // Read cycle.
@@ -76,7 +83,9 @@ inline SyncCommand parseCmd(const std::string& __message) {
     // Read source address.
     if (cmd.m_type == SC_SEND || cmd.m_type == SC_RECEIVE || cmd.m_type == SC_BARRIER ||
         cmd.m_type == SC_LOCK || cmd.m_type == SC_UNLOCK || cmd.m_type == SC_LAUNCH ||
-        cmd.m_type == SC_WAITLAUNCH || cmd.m_type == SC_READ || cmd.m_type == SC_WRITE) {
+        cmd.m_type == SC_WAITLAUNCH || cmd.m_type == SC_READ || cmd.m_type == SC_WRITE || 
+        cmd.m_type == SC_READMEM || cmd.m_type == SC_WRITEMEM || cmd.m_type == SC_CREATEPIP || 
+        cmd.m_type == SC_STARTMEM || cmd.m_type == SC_RESULTMEM) {
         long src_x, src_y;
         ss >> src_x >> src_y;
         cmd.m_src.push_back(src_x);
@@ -85,9 +94,11 @@ inline SyncCommand parseCmd(const std::string& __message) {
         cmd.m_src.push_back(-1);
         cmd.m_src.push_back(-1);
     }
-    // Read destination address.
+    // Read destination address. 
     if (cmd.m_type == SC_SEND || cmd.m_type == SC_RECEIVE || cmd.m_type == SC_LAUNCH ||
-        cmd.m_type == SC_WAITLAUNCH || cmd.m_type == SC_READ || cmd.m_type == SC_WRITE) {
+        cmd.m_type == SC_WAITLAUNCH || cmd.m_type == SC_READ || cmd.m_type == SC_WRITE || 
+        cmd.m_type == SC_CREATEPIP || cmd.m_type == SC_READMEM || cmd.m_type == SC_WRITEMEM || 
+        cmd.m_type == SC_STOPMEM || cmd.m_type == SC_RESULTMEM) {
         long dst_x, dst_y;
         ss >> dst_x >> dst_y;
         cmd.m_dst.push_back(dst_x);
@@ -103,12 +114,20 @@ inline SyncCommand parseCmd(const std::string& __message) {
         cmd.m_dst.push_back(-1);
         cmd.m_dst.push_back(-1);
     }
+
+    if(cmd.m_type == SC_READMEM || cmd.m_type == SC_WRITEMEM || cmd.m_type == SC_RESULTMEM) {
+        uint64_t addr;
+        ss >> addr;
+        cmd.m_addr = addr;
+    }
+    else cmd.m_addr=0;
+
     // Read number of bytes and descriptor.
     if (cmd.m_type == SC_READ || cmd.m_type == SC_WRITE) {
         ss >> cmd.m_nbytes >> cmd.m_desc;
     }
-    // Read barrier count.
-    else if (cmd.m_type == SC_BARRIER) {
+    // Read barrier count.    
+    else if (cmd.m_type == SC_BARRIER || cmd.m_type== SC_READMEM || cmd.m_type== SC_WRITEMEM || cmd.m_type== SC_RESULTMEM) {
         ss >> cmd.m_nbytes;
         cmd.m_desc = 0;
     } else {
@@ -175,6 +194,12 @@ inline std::string dumpCmd(const SyncCommand& __cmd) {
                            : __cmd.m_type == SC_WRITE      ? "WRITE"
                            : __cmd.m_type == SC_SYNC       ? "SYNC"
                            : __cmd.m_type == SC_RESULT     ? "RESULT"
+                           : __cmd.m_type == SC_READMEM    ? "READMEM"
+                           : __cmd.m_type == SC_WRITEMEM   ? "WRITEMEM"
+                           : __cmd.m_type == SC_STARTMEM   ? "STARTMEM"
+                           : __cmd.m_type == SC_STOPMEM    ? "STOPMEM"
+                           : __cmd.m_type == SC_RESULTMEM  ? "RESULTMEM"
+                           : __cmd.m_type == SC_CREATEPIP  ? "CREATEPIP"
                                                            : "CYCLE";
     ss << type_str << " command";
 
@@ -186,16 +211,20 @@ inline std::string dumpCmd(const SyncCommand& __cmd) {
     // Write source address.
     if (__cmd.m_type == SC_SEND || __cmd.m_type == SC_RECEIVE || __cmd.m_type == SC_BARRIER ||
         __cmd.m_type == SC_LOCK || __cmd.m_type == SC_UNLOCK || __cmd.m_type == SC_LAUNCH ||
-        __cmd.m_type == SC_WAITLAUNCH || __cmd.m_type == SC_READ || __cmd.m_type == SC_WRITE) {
+        __cmd.m_type == SC_WAITLAUNCH || __cmd.m_type == SC_READ || __cmd.m_type == SC_WRITE || 
+        __cmd.m_type == SC_READMEM ||  __cmd.m_type == SC_WRITEMEM || __cmd.m_type == SC_CREATEPIP||
+        __cmd.m_type == SC_STARTMEM || __cmd.m_type == SC_RESULTMEM) {
         ss << " from " << DIM_X(__cmd.m_src) << "," << DIM_Y(__cmd.m_src);
     }
     // Write destination address.
     if (__cmd.m_type == SC_SEND || __cmd.m_type == SC_RECEIVE || __cmd.m_type == SC_LAUNCH ||
-        __cmd.m_type == SC_WAITLAUNCH || __cmd.m_type == SC_READ || __cmd.m_type == SC_WRITE) {
+        __cmd.m_type == SC_WAITLAUNCH || __cmd.m_type == SC_READ || __cmd.m_type == SC_WRITE || 
+        __cmd.m_type == SC_READMEM ||  __cmd.m_type == SC_WRITEMEM ||__cmd.m_type == SC_CREATEPIP || 
+        __cmd.m_type == SC_STOPMEM || __cmd.m_type == SC_RESULTMEM) {
         ss << " to " << DIM_X(__cmd.m_dst) << "," << DIM_Y(__cmd.m_dst);
     }
     // Write target address.
-    if (__cmd.m_type == SC_BARRIER || __cmd.m_type == SC_LOCK || __cmd.m_type == SC_UNLOCK) {
+    if (__cmd.m_type == SC_BARRIER || __cmd.m_type == SC_LOCK || __cmd.m_type == SC_UNLOCK || __cmd.m_type == SC_READMEM || __cmd.m_type == SC_WRITEMEM) {
         ss << " to " << DIM_X(__cmd.m_dst);
     }
     // Write Result.
@@ -433,6 +462,28 @@ inline void sendResultCmd(int __fd, const std::vector<long>& __res_list) {
     };
 }
 
+inline void sendCreatePipCmd(int __src_x, int __src_y, int __dst_x,int __dst_y) {
+    std::cout << NSINTERCHIPLET_CMD_HEAD << " CREATEPIP " << __src_x << " " << __src_y << " "<< __dst_x <<" "<<__dst_y << std::endl;
+}
+
+inline void sendReadMemCmd(int __src_x, int __src_y, int __dst_x, int __dst_y, uint64_t __addr, uint64_t nbytes) {
+    std::cout << NSINTERCHIPLET_CMD_HEAD << " READMEM " << __src_x << " " << __src_y << " " << __dst_x << " " << __dst_y
+              << " " << __addr  << " " << nbytes << std::endl;
+}
+
+inline void sendWriteMemCmd(int __src_x, int __src_y, int __dst_x, int __dst_y, uint64_t __addr, uint64_t nbytes) {
+    std::cout << NSINTERCHIPLET_CMD_HEAD << " WRITEMEM " << __src_x << " " << __src_y << " " << __dst_x << " " << __dst_y
+              << " " << __addr  << " " << nbytes << std::endl;
+}
+
+inline void sendStopMemCmd(int __dst_x, int __dst_y) {
+    std::cout << NSINTERCHIPLET_CMD_HEAD << " STOPMEM " << __dst_x << " " << __dst_y << std::endl;
+}
+
+inline void sendStartMemCmd(int __src_x, int __src_y) {
+    std::cout << NSINTERCHIPLET_CMD_HEAD << " STARTMEM " << __src_x << " " << __src_y << std::endl;
+}
+
 /**
  * @brief Send CYCLE command and wait for SYNC command.
  * @param __cycle Cycle to send CYCLE command.
@@ -605,4 +656,76 @@ inline TimeType writeSync(TimeType __cycle, int __src_x, int __src_y, int __dst_
 /**
  * @}
  */
+inline std::string createPipSync(int __src_x, int __src_y, int __dst_x,int __dst_y) {
+    // Send createPip command.
+    sendCreatePipCmd(__src_x, __src_y, __dst_x,__dst_y);
+    // Read message from stdin.
+    SyncCommand resp_cmd = parseCmd();
+    // Return Pipe name.
+    return resp_cmd.m_res_list[0];
+}
+
+
+inline void readMemSync(int __src_x, int __src_y,int __dst_x, int __dst_y,  uint64_t address, uint64_t nbytes) {
+    // Send ReadMem command.
+    sendReadMemCmd( __src_x, __src_y, __dst_x,__dst_y,address, nbytes);
+    // Read message from stdin.
+    SyncCommand resp_cmd = parseCmd();
+    // Only handle SYNC message, return cycle to receive SYNC command.
+    return;
+}
+
+inline void writeMemSync(int __src_x, int __src_y, int __dst_x, int __dst_y, uint64_t address, uint64_t nbytes) {
+    // Send ReadMem command.
+    sendWriteMemCmd( __src_x, __src_y, __dst_x,__dst_y,address, nbytes);
+    // Read message from stdin.
+    SyncCommand resp_cmd = parseCmd();
+    // Only handle SYNC message, return cycle to receive SYNC command.
+    return;
+}
+
+inline void stopMemSync(int __dst_x, int __dst_y)
+{
+    sendStopMemCmd(__dst_x, __dst_y);
+    SyncCommand resp_cmd = parseCmd();
+    return ;
+}
+
+inline void sendReadMemSyncCmd(int __fd,int __src_x, int __src_y, int __dst_x, int __dst_y, uint64_t __addr, uint64_t __nbytes) {
+    std::stringstream ss;
+    ss << NSINTERCHIPLET_CMD_HEAD << " READMEM " << __src_x << " " << __src_y << " " << __dst_x << " " << __dst_y
+              << " " << __addr  << " " << __nbytes << std::endl;
+
+    if (write(__fd, ss.str().c_str(), ss.str().size()) < 0) {
+        perror("write");
+        exit(EXIT_FAILURE);
+    };
+}
+
+inline void sendWriteMemSyncCmd(int __fd,int __src_x, int __src_y, int __dst_x, int __dst_y, uint64_t __addr, uint64_t __nbytes) {
+    std::stringstream ss;
+    ss << NSINTERCHIPLET_CMD_HEAD << " WRITEMEM " << __src_x << " " << __src_y << " " << __dst_x << " " << __dst_y
+              << " " << __addr  << " " << __nbytes << std::endl;
+
+    if (write(__fd, ss.str().c_str(), ss.str().size()) < 0) {
+        perror("write");
+        exit(EXIT_FAILURE);
+    };
+}
+
+inline void sendStopMemSyncCmd(int __fd,int __dst_x, int __dst_y) {
+    std::stringstream ss;
+    ss << NSINTERCHIPLET_CMD_HEAD << " STOPMEM " << __dst_x << " " << __dst_y << std::endl;
+
+    if (write(__fd, ss.str().c_str(), ss.str().size()) < 0) {
+        perror("write");
+        exit(EXIT_FAILURE);
+    };
+}
+
+inline void sendResultMemCmd(int __src_x, int __src_y, int __dst_x, int __dst_y, uint64_t __addr, uint64_t __nbytes)
+{
+    std::cout << NSINTERCHIPLET_CMD_HEAD << " RESULTMEM " << __src_x << " " << __src_y << " " << __dst_x << " " << __dst_y
+              << " " << __addr  << " " << __nbytes << std::endl;
+}
 }  // namespace InterChiplet

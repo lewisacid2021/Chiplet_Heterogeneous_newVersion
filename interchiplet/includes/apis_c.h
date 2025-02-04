@@ -79,6 +79,24 @@ syscall_return_t sendMessage(int64_t __dst_x, int64_t __dst_y, int64_t __src_x, 
 syscall_return_t receiveMessage(int64_t __dst_x, int64_t __dst_y, int64_t __src_x, int64_t __src_y,
                                 void* __addr, int64_t __nbyte);
 
+class MemStruct{
+    public:
+        char * data;
+        uint64_t addr;
+        uint64_t nbytes;
+    MemStruct(char * _data, uint64_t _addr, uint64_t _nbytes):data(_data),addr(_addr),nbytes(_nbytes){};
+};
+
+syscall_return_t readMemory(int64_t __dst_x, int64_t __dst_y,int64_t __src_x, int64_t __src_y, MemStruct* __mem_struct);
+
+syscall_return_t writeMemory(int64_t __dst_x, int64_t __dst_y,int64_t __src_x, int64_t __src_y, MemStruct* __mem_struct);
+
+syscall_return_t stopMemory(int64_t __dst_x, int64_t __dst_y);
+
+
+
+
+
 /**
  * @}
  */
