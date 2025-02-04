@@ -19,8 +19,6 @@
 
 #include <cstring>
 
-#include "../../../interchiplet/includes/pipe_comm.h"
-
 #if 0
    extern Lock iolock;
 #  define MYLOG(...) { ScopedLock l(iolock); fflush(stderr); fprintf(stderr, "[%8lu] %dcor %-25s@%03u: ", getPerformanceModel()->getCycleCount(ShmemPerfModel::_USER_THREAD), m_core_id, __FUNCTION__, __LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr); }
@@ -129,13 +127,6 @@ void Core::enablePerformanceModels()
 
 void Core::disablePerformanceModels()
 {
-   SubsecondTime start_time = getPerformanceModel()->getElapsedTime();
-   // Convert SubsecondTime to cycles in global clock domain
-   const ComponentPeriod *dom_global = Sim()->getDvfsManager()->getGlobalDomain();
-   UInt64 cycles = SubsecondTime::divideRounded(start_time, *dom_global);
-   // Send cycle command.
-   InterChiplet::sendCycleCmd(cycles);
-
    getShmemPerfModel()->disable();
    getMemoryManager()->disableModels();
    getNetwork()->disableModels();
