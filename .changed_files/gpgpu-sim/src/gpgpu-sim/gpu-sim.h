@@ -565,6 +565,9 @@ class gpgpu_sim : public gpgpu_t {
   // backward pointer
   class gpgpu_context *gpgpu_ctx;
 
+  // Directly set gpu cycle.
+  void chiplet_direct_set_cycle(long long int end_time);
+
  private:
   // clocks
   void reinit_clock_domains(void);

@@ -108,7 +108,7 @@ lib$(PROG).a: $(OBJS)
 	ar rcs $(OUTPUT_DIR)/lib$(PROG).a $(OBJS)
 
 $(OUTPUT_DIR)/%.o: %.cc
-	$(CPP) $(CXXFLAGS) -I./ -I$(OUTPUT_DIR) -I$(CUDA_INSTALL_PATH)/include  -c $< -o $@
+	$(CPP) $(CXXFLAGS) -I./ -I$(OUTPUT_DIR) -I$(CUDA_INSTALL_PATH)/include -I$(SIMULATOR_ROOT)/interchiplet/includes -c $< -o $@
 
 $(OUTPUT_DIR)/%.o: %.c
 	$(CPP) $(CCFLAGS) -I./ -I$(OUTPUT_DIR) -I$(CUDA_INSTALL_PATH)/include  -c $< -o $@
