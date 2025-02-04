@@ -231,3 +231,9 @@ interchiplet <bench>.yml [--cwd <string>] [-t|--timeout <int>] [-e|--error <floa
 - `-t <int>`和`--timeout <int>`指定仿真退出的轮次。不论结果是否收敛，都会结束仿真。
 - `e <float>`和`--error <float>`指定仿真退出的条件。当仿真误差小于这个比例时，结束仿真。
 
+# 运行GA 
+默认运行matmul基准测试
+在benchmark/optimize目录下
+```
+python ga.py
+```
